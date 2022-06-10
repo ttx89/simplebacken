@@ -9,8 +9,8 @@ const bcrypt = require("bcrypt");
 const saltRounds = 10;
 
 const app = express();
-const port = 3001; // Must be different than the port of the React app
-// const port = process.env.PORT || 3001;
+// const port = 3001; // Must be different than the port of the React app
+const port = process.env.PORT || 3001;
 
 const dbName = "myFirstDb"; //set dbName as "exercise" also work,because have 2 databases in Mongodb
 

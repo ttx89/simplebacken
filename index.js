@@ -4,6 +4,12 @@ const cors = require("cors");
 require("dotenv").config();
 const mongoose = require("mongoose");
 const userModel = require("./models");
+
+const itemModel = require("./items"); //items
+const reviewModel = require("./reviews"); //review
+const grabbeditemModel = require("./grabbeditems"); //grabbeditem
+const wisheditemModel = require("./wisheditems"); //grabbeditem
+
 const validator = require("validator");
 const bcrypt = require("bcrypt");
 const saltRounds = 10;
@@ -40,6 +46,192 @@ db.once("open", function () {
   console.log("Connected successfully");
 });
 
+app.use(cors()); // https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
+app.use(express.json()); // Allows express to read a request body
+// Configuring body parser middleware
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
+
+app.post("/items", async (req, res) => {
+  const itemname = req.body.itemname;
+  const username = req.body.username;
+  const expiredate = req.body.expiredate;
+  const address = req.body.address;
+  const description = req.body.description;
+  const isActive = req.body.isActive;
+  const winner = req.body.winner;
+  const item = {
+    itemname: itemname,
+    username: username,
+    expiredate: expiredate,
+    address: address,
+    description: description,
+    isActive: isActive,
+    winner: winner,
+  };
+  await itemModel.create(item);
+  res.send(item);
+});
+
+app.get("/items", async (req, res) => {
+  const item = await itemModel.find();
+  res.send(item);
+});
+
+app.delete("/items/delete/:id", async (req, res) => {
+  const id = req.params.id;
+  const results = await itemModel.deleteOne({ _id: id });
+  res.send(results);
+});
+
+// fang
+app.get("/items/:username", async (req, res) => {
+  const username = req.params.username;
+  const item = await itemModel.find({ username: username });
+  res.send(item);
+});
+
+app.get("/items/edit/:id", async (req, res) => {
+  const id = req.params.id;
+  const item = await itemModel.findOne({ _id: id });
+  res.send(item);
+});
+
+app.put("/items/edit/:id", async (req, res) => {
+  const id = req.params.id;
+  const itemname = req.body.itemname;
+  const username = req.body.username;
+  const expiredate = req.body.expiredate;
+  const address = req.body.address;
+  const description = req.body.description;
+  const isActive = req.body.isActive;
+  const winner = req.body.winner;
+  const item = {
+    itemname: itemname,
+    username: username,
+    expiredate: expiredate,
+    address: address,
+    description: description,
+    isActive: isActive,
+    winner: winner,
+  };
+  const results = await itemModel.replaceOne({ _id: id }, item);
+  res.send(results);
+});
+// fang end
+
+app.get("/items/active", async (req, res) => {
+  const active = req.query.active;
+  const items = await userModel.find({ active: active });
+  res.send(items);
+});
+
+app.put("/items/grab", async (req, res) => {
+  const id = req.body.id;
+  const item = await itemModel.updateOne(
+    { _id: id },
+    { $set: { winner: req.body.userInfo, isActive: false } }
+  );
+  res.send(item);
+});
+
+app.put("/items/ungrab", async (req, res) => {
+  const id = req.body.id;
+  const item = await itemModel.updateOne(
+    { _id: id },
+    { $set: { isActive: true } }
+  );
+  res.send(item);
+});
+
+// review
+
+app.post("/reviews", async (req, res) => {
+  const review_id = req.body.review_id;
+  const reviewcomments = req.body.reviewcomments;
+  const rating = req.body.rating;
+  const review = {
+    review_id: review_id,
+    reviewcomments: reviewcomments,
+    rating: rating,
+  };
+  await reviewModel.create(review);
+  res.send(review);
+});
+
+app.get("/reviews", async (req, res) => {
+  const review = await reviewModel.find();
+  res.send(review);
+});
+
+// Grabber
+
+app.post("/grabbeditems", async (req, res) => {
+  const grabber_name = req.body.userInfo;
+  const grabbeditem_id = req.body.id;
+  const founditem = await itemModel.findOne({ _id: req.body.id });
+  const grabbeditem = {
+    grabber_name: grabber_name,
+    grabbeditem_id: grabbeditem_id,
+    itemname: founditem.itemname,
+    username: founditem.username,
+    address: founditem.address,
+  };
+  await grabbeditemModel.create(grabbeditem);
+  res.send(grabbeditem);
+});
+
+
+app.post("/wisheditems", async (req, res) => {
+  const grabber_name = req.body.userInfo;
+  const wisheditem_id = req.body.id;
+  const founditem = await itemModel.findOne({ _id: req.body.id });
+  const wisheditem = {
+    grabber_name: grabber_name,
+    wisheditem_id: wisheditem_id,
+    itemname: founditem.itemname,
+    username: founditem.username,
+  };
+  await wisheditemModel.create(wisheditem);
+  res.send(wisheditem);
+});
+
+app.get("/grabbeditems/:userInfo", async (req, res) => {
+  const grabbeditems = await grabbeditemModel.find({ grabber_name: req.params.userInfo });
+  res.send(grabbeditems);
+});
+
+
+app.get("/grabbeditems/", async (req, res) => {
+  const allgrabbeditems = await grabbeditemModel.find();
+  res.send(allgrabbeditems);
+});
+
+app.delete("/grabbeditems/:id", async (req, res) => {
+  const results = await grabbeditemModel.deleteOne({ grabbeditem_id : req.params.id });
+  // console.log(results);
+  res.send(results);
+});
+
+app.get("/wisheditems/:userInfo", async (req, res) => {
+  const wisheditems = await wisheditemModel.find({ grabber_name: req.params.userInfo });
+  console.log(req.body.userInfo);
+  res.send(wisheditems);
+});
+
+app.get("/wisheditems/", async (req, res) => {
+  const allwisheditems = await wisheditemModel.find();
+  res.send(allwisheditems);
+});
+
+app.delete("/wisheditems/:id", async (req, res) => {
+  const results = await wisheditemModel.deleteOne({ wisheditem_id : req.params.id });
+  console.log("delete wished id " + req.params.id);
+  res.send(results);
+});
+
+
+////////////////////////////////////
 app.post("/users/register", async (request, response) => {
   // const id = request.body.id;
   const username = request.body.username;
